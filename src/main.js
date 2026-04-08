@@ -3,7 +3,6 @@ import { state, getRandomCard, nextPlayer, addScore, resetGame } from './modules
 
 const app = document.querySelector('#app')
 
-// ── RENDER PRINCIPAL ──────────────────────────────────────────
 app.innerHTML = `
   <div id="screen-home" class="screen active">
     <div class="logo">
@@ -46,7 +45,7 @@ app.innerHTML = `
     <div class="game-header">
       <button class="btn-back" id="btn-back">&#8592;</button>
       <div class="turn-badge">Turno de <span id="current-player-name">—</span></div>
-      <div class="turn-counter" id="turn-counter">1</div>
+      <div class="turn-counter" id="turn-counter">Turno 1</div>
     </div>
 
     <div class="card-wrap">
@@ -62,12 +61,22 @@ app.innerHTML = `
           <div class="card-type-label" id="card-type-label">Verdad</div>
           <div class="card-player" id="card-player">—</div>
           <div class="card-text" id="card-text">Cargando...</div>
+          <div class="timer-wrap hidden" id="timer-wrap">
+            <div class="timer-ring">
+              <svg viewBox="0 0 80 80">
+                <circle class="ring-bg" cx="40" cy="40" r="35"/>
+                <circle class="ring-progress" id="ring-progress" cx="40" cy="40" r="35"/>
+              </svg>
+              <div class="timer-number" id="timer-number">30</div>
+            </div>
+            <button class="btn-timer" id="btn-timer">▶ Iniciar tiempo</button>
+          </div>
         </div>
 
       </div>
     </div>
 
-    <div class="card-actions">
+    <div class="card-actions locked" id="card-actions">
       <button class="btn-skip" id="btn-skip">Saltar</button>
       <button class="btn-next" id="btn-next">Completado ✓</button>
     </div>
@@ -76,7 +85,7 @@ app.innerHTML = `
   </div>
 `
 
-// ── ESTADO LOCAL ──────────────────────────────────────────────
+// ── PANTALLAS ─────────────────────────────────────────────────
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
   document.getElementById(id).classList.add('active')
@@ -136,39 +145,114 @@ document.getElementById('player-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') addPlayer()
 })
 
+// ── TEMPORIZADOR ──────────────────────────────────────────────
+const TIMER_SECONDS = 30
+const CIRCUMFERENCE = 2 * Math.PI * 35
+
+let timerInterval = null
+let currentCardType = 'verdad'
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
+  }
+}
+
+function resetTimer() {
+  stopTimer()
+  const ring = document.getElementById('ring-progress')
+  const number = document.getElementById('timer-number')
+  const btn = document.getElementById('btn-timer')
+  if (!ring) return
+  ring.style.strokeDashoffset = 0
+  ring.classList.remove('warning', 'danger')
+  number.textContent = TIMER_SECONDS
+  btn.textContent = '▶ Iniciar tiempo'
+  btn.disabled = false
+  btn.onclick = () => startTimer()
+}
+
+function startTimer() {
+  const ring = document.getElementById('ring-progress')
+  const number = document.getElementById('timer-number')
+  const btn = document.getElementById('btn-timer')
+
+  let remaining = TIMER_SECONDS
+  btn.textContent = '⏹ Detener'
+  btn.disabled = false
+
+  const unlockActions = () => {
+    document.getElementById('card-actions').classList.remove('locked')
+  }
+
+  btn.onclick = () => {
+    stopTimer()
+    number.textContent = '✓'
+    btn.textContent = '✅ Completado'
+    btn.disabled = true
+    btn.onclick = null
+    unlockActions()
+  }
+
+  timerInterval = setInterval(() => {
+    remaining--
+    number.textContent = remaining
+
+    const offset = CIRCUMFERENCE * (1 - remaining / TIMER_SECONDS)
+    ring.style.strokeDashoffset = offset
+
+    ring.classList.remove('warning', 'danger')
+    if (remaining <= 10) ring.classList.add('warning')
+    if (remaining <= 5) ring.classList.add('danger')
+
+    if (remaining <= 0) {
+      stopTimer()
+      number.textContent = '✓'
+      btn.textContent = '⏰ ¡Tiempo!'
+      btn.disabled = true
+      btn.onclick = null
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200])
+      unlockActions()
+    }
+  }, 1000)
+}
+
 // ── JUEGO ─────────────────────────────────────────────────────
 function loadCard() {
   const player = state.players[state.currentTurn % state.players.length]
   state.totalTurns++
 
-  // Actualizar header
   document.getElementById('current-player-name').textContent = player
   document.getElementById('turn-counter').textContent = `Turno ${state.totalTurns}`
-
-  // Mostrar nombre en el frente de la carta
   document.getElementById('card-player-front').textContent = player
 
-  // Bloquear botones hasta que se voltee la carta
-  document.querySelector('.card-actions').classList.add('locked')
+  // Bloquear botones y resetear flip
+  document.getElementById('card-actions').classList.add('locked')
+  document.getElementById('card-flipper').classList.remove('flipped')
 
-  // Resetear el flip — voltear de vuelta al frente
-  const flipper = document.getElementById('card-flipper')
-  flipper.classList.remove('flipped')
+  // Resetear temporizador
+  stopTimer()
+  resetTimer()
 
-  // Preparar contenido del reverso
   const card = getRandomCard()
   if (!card) return
+  currentCardType = card.type
 
   const el = document.getElementById('game-card')
   const typeLabel = document.getElementById('card-type-label')
   const cardText = document.getElementById('card-text')
   const cardPlayer = document.getElementById('card-player')
+  const timerWrap = document.getElementById('timer-wrap')
 
   el.className = 'card-back game-card type-' + card.type
   const labels = { verdad: '✦ Verdad', reto: '⚡ Reto', accion: '⭐ Acción grupal' }
   typeLabel.textContent = labels[card.type] || card.type
   cardPlayer.textContent = player
   cardText.textContent = card.text
+
+  // Mostrar temporizador solo en retos
+  timerWrap.classList.toggle('hidden', card.type !== 'reto')
 }
 
 function renderScoreboard() {
@@ -186,6 +270,7 @@ function renderScoreboard() {
   `
 }
 
+// ── EVENTOS ───────────────────────────────────────────────────
 document.getElementById('btn-start').addEventListener('click', () => {
   resetGame()
   showScreen('screen-game')
@@ -206,11 +291,13 @@ document.getElementById('btn-skip').addEventListener('click', () => {
 })
 
 document.getElementById('btn-back').addEventListener('click', () => {
+  stopTimer()
   showScreen('screen-home')
 })
 
-// Flip al tocar la carta
 document.getElementById('card-front').addEventListener('click', () => {
   document.getElementById('card-flipper').classList.add('flipped')
-  document.querySelector('.card-actions').classList.remove('locked')
+  if (currentCardType !== 'reto') {
+    document.getElementById('card-actions').classList.remove('locked')
+  }
 })

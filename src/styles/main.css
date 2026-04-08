@@ -294,7 +294,7 @@ body {
 .card-flipper {
     position: relative;
     width: 100%;
-    min-height: 280px;
+    height: 340px;
     transform-style: preserve-3d;
     transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -306,8 +306,10 @@ body {
 .card-front,
 .card-back {
     position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    min-height: 280px;
+    height: 100%;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     border-radius: 20px;
@@ -315,10 +317,10 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 16px;
-    padding: 32px 24px;
+    gap: 12px;
+    padding: 24px 20px;
     text-align: center;
-    overflow: hidden;
+    overflow-y: auto;
 }
 
 .card-front {
@@ -327,23 +329,19 @@ body {
     cursor: pointer;
 }
 
-.card-front-hint {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin-top: 8px;
-}
-
-.card-front-icon {
-    font-size: 48px;
-}
-
 .card-back {
     background: var(--surface);
     border: 1.5px solid var(--border);
     transform: rotateY(180deg);
-    position: absolute;
-    top: 0;
-    left: 0;
+}
+
+.card-front-hint {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.card-front-icon {
+    font-size: 48px;
 }
 
 .card-back::before {
@@ -353,6 +351,7 @@ body {
     left: 0;
     right: 0;
     height: 3px;
+    border-radius: 20px 20px 0 0;
 }
 
 .type-verdad .card-back::before {
@@ -393,8 +392,8 @@ body {
 }
 
 .card-text {
-    font-size: 17px;
-    line-height: 1.65;
+    font-size: 16px;
+    line-height: 1.6;
     color: var(--text);
 }
 
@@ -465,4 +464,85 @@ body {
     font-size: 13px;
     font-weight: 700;
     color: var(--accent);
+}
+
+/* TEMPORIZADOR */
+.timer-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin: 4px 0 8px;
+}
+
+.timer-ring {
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+
+.timer-ring svg {
+    transform: rotate(-90deg);
+    width: 80px;
+    height: 80px;
+}
+
+.timer-ring circle {
+    fill: none;
+    stroke-width: 5;
+    stroke-linecap: round;
+}
+
+.timer-ring .ring-bg {
+    stroke: var(--surface2);
+}
+
+.timer-ring .ring-progress {
+    stroke: var(--accent);
+    stroke-dasharray: 220;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1s linear, stroke 0.3s;
+}
+
+.ring-progress.warning {
+    stroke: #fb923c;
+}
+
+.ring-progress.danger {
+    stroke: #f43f5e;
+}
+
+.timer-number {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.btn-timer {
+    padding: 8px 20px;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-timer:hover {
+    border-color: var(--accent);
+}
+
+.btn-timer:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.timer-wrap.hidden {
+    display: none;
 }
