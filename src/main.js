@@ -50,10 +50,20 @@ app.innerHTML = `
     </div>
 
     <div class="card-wrap">
-      <div class="game-card" id="game-card">
-        <div class="card-type-label" id="card-type-label">Verdad</div>
-        <div class="card-player" id="card-player">—</div>
-        <div class="card-text" id="card-text">Cargando carta...</div>
+      <div class="card-flipper" id="card-flipper">
+
+        <div class="card-front" id="card-front">
+          <div class="card-front-icon">🂠</div>
+          <div class="card-player" id="card-player-front">—</div>
+          <div class="card-front-hint">Toca para revelar</div>
+        </div>
+
+        <div class="card-back game-card" id="game-card">
+          <div class="card-type-label" id="card-type-label">Verdad</div>
+          <div class="card-player" id="card-player">—</div>
+          <div class="card-text" id="card-text">Cargando...</div>
+        </div>
+
       </div>
     </div>
 
@@ -131,20 +141,33 @@ function loadCard() {
   const player = state.players[state.currentTurn % state.players.length]
   state.totalTurns++
 
+  // Actualizar header
   document.getElementById('current-player-name').textContent = player
-  document.getElementById('card-player').textContent = player
   document.getElementById('turn-counter').textContent = `Turno ${state.totalTurns}`
 
+  // Mostrar nombre en el frente de la carta
+  document.getElementById('card-player-front').textContent = player
+
+  // Bloquear botones hasta que se voltee la carta
+  document.querySelector('.card-actions').classList.add('locked')
+
+  // Resetear el flip — voltear de vuelta al frente
+  const flipper = document.getElementById('card-flipper')
+  flipper.classList.remove('flipped')
+
+  // Preparar contenido del reverso
   const card = getRandomCard()
   if (!card) return
 
   const el = document.getElementById('game-card')
   const typeLabel = document.getElementById('card-type-label')
   const cardText = document.getElementById('card-text')
+  const cardPlayer = document.getElementById('card-player')
 
-  el.className = 'game-card type-' + card.type
+  el.className = 'card-back game-card type-' + card.type
   const labels = { verdad: '✦ Verdad', reto: '⚡ Reto', accion: '⭐ Acción grupal' }
   typeLabel.textContent = labels[card.type] || card.type
+  cardPlayer.textContent = player
   cardText.textContent = card.text
 }
 
@@ -184,4 +207,10 @@ document.getElementById('btn-skip').addEventListener('click', () => {
 
 document.getElementById('btn-back').addEventListener('click', () => {
   showScreen('screen-home')
+})
+
+// Flip al tocar la carta
+document.getElementById('card-front').addEventListener('click', () => {
+  document.getElementById('card-flipper').classList.add('flipped')
+  document.querySelector('.card-actions').classList.remove('locked')
 })
