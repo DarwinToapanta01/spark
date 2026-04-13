@@ -43,7 +43,7 @@ app.innerHTML = `
 
   <div id="screen-game" class="screen">
     <div class="game-header">
-      <button class="btn-back" id="btn-back">&#8592;</button>
+      <button class="btn-end-game" id="btn-back">Terminar</button>
       <div class="turn-badge">Turno de <span id="current-player-name">—</span></div>
       <div class="turn-counter" id="turn-counter">Turno 1</div>
     </div>
@@ -72,6 +72,20 @@ app.innerHTML = `
     </div>
 
     <div id="scoreboard"></div>
+  </div>
+
+  <div id="screen-end" class="screen">
+    <div class="logo">
+      <h1>Spark</h1>
+      <p>¡Juego terminado!</p>
+    </div>
+
+    <div class="podium-wrap" id="podium-wrap"></div>
+
+    <div class="end-actions">
+      <button class="btn-primary" id="btn-replay">Jugar de nuevo</button>
+      <button class="btn-secondary" id="btn-home-end">Volver al inicio</button>
+    </div>
   </div>
 `
 
@@ -174,6 +188,46 @@ function renderScoreboard() {
   `
 }
 
+// ── FIN DE JUEGO ──────────────────────────────────────────────
+function showEndScreen() {
+  const sorted = [...state.players].sort((a, b) => (state.scores[b] || 0) - (state.scores[a] || 0))
+  const medals = ['🥇', '🥈', '🥉']
+  const styles = ['podium-1st', 'podium-2nd', 'podium-3rd']
+
+  document.getElementById('podium-wrap').innerHTML = `
+    <div class="podium-title">Resultados finales</div>
+    ${sorted.map((p, i) => `
+      <div class="podium-row ${styles[i] || 'podium-rest'}">
+        <span class="podium-medal">${medals[i] || '▪'}</span>
+        <span class="podium-name">${p}</span>
+        <span class="podium-pts">${state.scores[p] || 0} pts</span>
+      </div>
+    `).join('')}
+  `
+
+  showScreen('screen-end')
+  launchConfetti()
+}
+
+function launchConfetti() {
+  const colors = ['#c084fc', '#f472b6', '#fb923c', '#4ade80', '#60a5fa']
+  for (let i = 0; i < 60; i++) {
+    const el = document.createElement('div')
+    el.className = 'confetti-piece'
+    el.style.cssText = `
+      left: ${Math.random() * 100}%;
+      background: ${colors[Math.floor(Math.random() * colors.length)]};
+      animation-delay: ${Math.random() * 1.5}s;
+      animation-duration: ${1.5 + Math.random() * 1.5}s;
+      width: ${6 + Math.random() * 6}px;
+      height: ${6 + Math.random() * 6}px;
+      border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+    `
+    document.getElementById('app').appendChild(el)
+    setTimeout(() => el.remove(), 4000)
+  }
+}
+
 // ── EVENTOS ───────────────────────────────────────────────────
 document.getElementById('btn-start').addEventListener('click', () => {
   resetGame()
@@ -195,6 +249,16 @@ document.getElementById('btn-skip').addEventListener('click', () => {
 })
 
 document.getElementById('btn-back').addEventListener('click', () => {
+  showEndScreen()
+})
+
+document.getElementById('btn-replay').addEventListener('click', () => {
+  resetGame()
+  showScreen('screen-game')
+  loadCard()
+})
+
+document.getElementById('btn-home-end').addEventListener('click', () => {
   showScreen('screen-home')
 })
 
