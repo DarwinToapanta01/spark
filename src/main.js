@@ -57,20 +57,10 @@ app.innerHTML = `
           <div class="card-front-hint">Toca para revelar</div>
         </div>
 
-        <div class="card-back game-card" id="game-card">
+        <div class="card-back" id="game-card">
           <div class="card-type-label" id="card-type-label">Verdad</div>
           <div class="card-player" id="card-player">—</div>
           <div class="card-text" id="card-text">Cargando...</div>
-          <div class="timer-wrap hidden" id="timer-wrap">
-            <div class="timer-ring">
-              <svg viewBox="0 0 80 80">
-                <circle class="ring-bg" cx="40" cy="40" r="35"/>
-                <circle class="ring-progress" id="ring-progress" cx="40" cy="40" r="35"/>
-              </svg>
-              <div class="timer-number" id="timer-number">30</div>
-            </div>
-            <button class="btn-timer" id="btn-timer">▶ Iniciar tiempo</button>
-          </div>
         </div>
 
       </div>
@@ -145,79 +135,6 @@ document.getElementById('player-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') addPlayer()
 })
 
-// ── TEMPORIZADOR ──────────────────────────────────────────────
-const TIMER_SECONDS = 30
-const CIRCUMFERENCE = 2 * Math.PI * 35
-
-let timerInterval = null
-let currentCardType = 'verdad'
-
-function stopTimer() {
-  if (timerInterval) {
-    clearInterval(timerInterval)
-    timerInterval = null
-  }
-}
-
-function resetTimer() {
-  stopTimer()
-  const ring = document.getElementById('ring-progress')
-  const number = document.getElementById('timer-number')
-  const btn = document.getElementById('btn-timer')
-  if (!ring) return
-  ring.style.strokeDashoffset = 0
-  ring.classList.remove('warning', 'danger')
-  number.textContent = TIMER_SECONDS
-  btn.textContent = '▶ Iniciar tiempo'
-  btn.disabled = false
-  btn.onclick = () => startTimer()
-}
-
-function startTimer() {
-  const ring = document.getElementById('ring-progress')
-  const number = document.getElementById('timer-number')
-  const btn = document.getElementById('btn-timer')
-
-  let remaining = TIMER_SECONDS
-  btn.textContent = '⏹ Detener'
-  btn.disabled = false
-
-  const unlockActions = () => {
-    document.getElementById('card-actions').classList.remove('locked')
-  }
-
-  btn.onclick = () => {
-    stopTimer()
-    number.textContent = '✓'
-    btn.textContent = '✅ Completado'
-    btn.disabled = true
-    btn.onclick = null
-    unlockActions()
-  }
-
-  timerInterval = setInterval(() => {
-    remaining--
-    number.textContent = remaining
-
-    const offset = CIRCUMFERENCE * (1 - remaining / TIMER_SECONDS)
-    ring.style.strokeDashoffset = offset
-
-    ring.classList.remove('warning', 'danger')
-    if (remaining <= 10) ring.classList.add('warning')
-    if (remaining <= 5) ring.classList.add('danger')
-
-    if (remaining <= 0) {
-      stopTimer()
-      number.textContent = '✓'
-      btn.textContent = '⏰ ¡Tiempo!'
-      btn.disabled = true
-      btn.onclick = null
-      if (navigator.vibrate) navigator.vibrate([200, 100, 200])
-      unlockActions()
-    }
-  }, 1000)
-}
-
 // ── JUEGO ─────────────────────────────────────────────────────
 function loadCard() {
   const player = state.players[state.currentTurn % state.players.length]
@@ -227,32 +144,19 @@ function loadCard() {
   document.getElementById('turn-counter').textContent = `Turno ${state.totalTurns}`
   document.getElementById('card-player-front').textContent = player
 
-  // Bloquear botones y resetear flip
   document.getElementById('card-actions').classList.add('locked')
   document.getElementById('card-flipper').classList.remove('flipped')
 
-  // Resetear temporizador
-  stopTimer()
-  resetTimer()
-
   const card = getRandomCard()
   if (!card) return
-  currentCardType = card.type
 
   const el = document.getElementById('game-card')
-  const typeLabel = document.getElementById('card-type-label')
-  const cardText = document.getElementById('card-text')
-  const cardPlayer = document.getElementById('card-player')
-  const timerWrap = document.getElementById('timer-wrap')
-
-  el.className = 'card-back game-card type-' + card.type
   const labels = { verdad: '✦ Verdad', reto: '⚡ Reto', accion: '⭐ Acción grupal' }
-  typeLabel.textContent = labels[card.type] || card.type
-  cardPlayer.textContent = player
-  cardText.textContent = card.text
 
-  // Mostrar temporizador solo en retos
-  timerWrap.classList.toggle('hidden', card.type !== 'reto')
+  el.className = 'card-back type-' + card.type
+  document.getElementById('card-type-label').textContent = labels[card.type] || card.type
+  document.getElementById('card-player').textContent = player
+  document.getElementById('card-text').textContent = card.text
 }
 
 function renderScoreboard() {
@@ -291,13 +195,10 @@ document.getElementById('btn-skip').addEventListener('click', () => {
 })
 
 document.getElementById('btn-back').addEventListener('click', () => {
-  stopTimer()
   showScreen('screen-home')
 })
 
 document.getElementById('card-front').addEventListener('click', () => {
   document.getElementById('card-flipper').classList.add('flipped')
-  if (currentCardType !== 'reto') {
-    document.getElementById('card-actions').classList.remove('locked')
-  }
+  document.getElementById('card-actions').classList.remove('locked')
 })
